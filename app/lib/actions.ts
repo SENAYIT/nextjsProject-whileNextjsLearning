@@ -5,6 +5,32 @@ import postgres from "postgres";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { signIn } from "@/auth";
+import { AuthError } from "next-auth";
+
+// for the login page - authentication action with error handling for invalid credentials and other potential errors that may occur during the sign-in process. This function will be called when the user submits the login form, and it will attempt to sign in the user using the provided credentials. If the credentials are invalid, it will return a specific error message. If any other error occurs, it will return a generic error message. If the sign-in is successful, it will redirect the user to the dashboard page.
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData,
+) {
+  try {
+    await signIn("credentials", formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case "CredentialsSignin":
+          return "Invalid credentials.";
+        default:
+          return "Something went wrong.";
+      }
+    }
+    throw error;
+  }
+}
+
+// for the invoice form actions - create, update, delete - with error handling for form validation and database operations. These functions will be called when the user submits the respective forms for creating, updating, or deleting an invoice. Each function will validate the form data using Zod schemas, handle any validation errors by returning specific error messages, and perform the necessary database operations using the postgres library. If any database errors occur, they will be caught and a generic error message will be returned. After successful operations, the cache will be revalidated and the user will be redirected to the invoices page.
+
 const sql = postgres(process.env.POSTGRES_URL!, { ssl: "require" });
 
 const FormSchema = z.object({
